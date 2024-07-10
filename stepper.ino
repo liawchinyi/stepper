@@ -16,7 +16,7 @@
 uint8_t rxbytes[8];
 long currentPosition = 0;         // Current position of the stepper motor
 const long maxPosition = 100000;  // Maximum position (100,000 steps)
-const int maxSpeed = 350;         // Maximum speed in steps per second
+const int maxSpeed = 400;         // Maximum speed in steps per second
 const int acceleration = 200;     // Acceleration in steps per second^2
 
 // Define an alternative SPI interface
@@ -89,7 +89,7 @@ void setup() {
   MyTim3->attachInterrupt(TIM3_IT_callback);
   MyTim3->resume();  // Start Timer Interrupt
 
-  MyTim2->setOverflow(30, MICROSEC_FORMAT);  // 30 microseconds
+  MyTim2->setOverflow(20, MICROSEC_FORMAT);  // 30 microseconds
   MyTim2->attachInterrupt(TIM2_IT_callback);
   MyTim2->resume();  // Start Timer Interrupt
 
@@ -169,49 +169,42 @@ void TIM2_IT_callback(void) {
   static unsigned long lastStepTime = 0;
 
   if (moving) {
-    // Accelerate
+    // Calculate speed based on acceleration profile
     if (currentStep < accelDist) {
       speed = sqrt(2 * acceleration * currentStep);
-      if (speed > maxSpeed) {
-        speed = maxSpeed;
-      }
-    }
-    // Decelerate
-    else if (currentStep >= stepsToMove - accelDist) {
+    } else if (currentStep >= stepsToMove - accelDist) {
       speed = sqrt(2 * acceleration * (stepsToMove - currentStep));
-      if (speed > maxSpeed) {
-        speed = maxSpeed;
-      }
-    }
-    // Constant speed
-    else {
+    } else {
       speed = maxSpeed;
     }
 
-    // Calculate step delay once per speed update
-    static long previousSpeed = 0;
-    if (speed != previousSpeed) {
-      stepDelay = 100000 / speed;
-      previousSpeed = speed;
+    // Limit speed to maxSpeed
+    if (speed > maxSpeed) {
+      speed = maxSpeed;
     }
 
+    // Calculate step delay
+    stepDelay = 200000 / speed;
+
+    // Perform step if enough time has passed
     unsigned long currentTime = micros();
     if (currentTime - lastStepTime >= stepDelay) {
-      lastStepTime = currentTime;
-      drv8711.clear_status();  // Enable motor driver
+      lastStepTime += stepDelay;  // Update lastStepTime for precise timing
+      //drv8711.clear_status();
       digitalWrite(STEP_PIN, HIGH);
-      delayMicroseconds(stepDelay / 2);
+      delayMicroseconds(stepDelay / 2);  // Half-step pulse
       digitalWrite(STEP_PIN, LOW);
-      greenLedState = !greenLedState;                       // Toggle the LED state
-      digitalWrite(GREEN_LED, greenLedState ? HIGH : LOW);  // Set the LED state
 
+      // Update position and step count
       currentStep++;
       currentPosition += direction ? 1 : -1;
-    
+
+      // Check if movement is complete
       if (currentStep >= stepsToMove) {
         moving = false;
         currentStep = 0;
       }
     }
+    drv8711.clear_status();
   }
 }

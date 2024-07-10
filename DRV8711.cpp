@@ -5,7 +5,7 @@
 DRV8711::DRV8711(SPIClass &spi, byte CSpin) : _spi(spi), _CSpin(CSpin), control_reg(0), drive_level(0) {}
 
 void DRV8711::begin(byte drive, unsigned int microsteps) {
-    begin(drive, microsteps, DRV8711DEC_SLOW_DECAY, DRV8711DRV_HIGH_100mA, DRV8711DRV_LOW_100mA, DRV8711CTL_DEADTIME_850ns);
+    begin(drive, microsteps, DRV8711DEC_SLOW_DECAY, DRV8711DRV_HIGH_100mA, DRV8711DRV_LOW_100mA, DRV8711CTL_DEADTIME_400ns);
 }
 
 void DRV8711::begin(byte drive, unsigned int microsteps, byte decay_mode, byte gate_speed, byte gate_drive, byte deadtime) {
@@ -46,7 +46,6 @@ int DRV8711::get_reg(byte reg) {
 
     return value;
 }
-
 
 byte DRV8711::get_status() {
     return get_reg(STATUS_REG) & 0xFF;
@@ -89,7 +88,6 @@ void DRV8711::decode_field(int field, int &reg, int &shf, int &bits, int &mask) 
     bits = (field & 0x7) + 1;
     mask = ((1 << bits) - 1) << shf;
 }
-
 
 void DRV8711::set_torque(uint8_t value) {
     write_reg_field(TORQUE_FIELD, value & 0xFF);
