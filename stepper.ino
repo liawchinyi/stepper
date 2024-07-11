@@ -12,12 +12,13 @@
 #define RED_LED PA8
 #define LIMIT_SWITCH_PIN PA1  // Define your limit switch pin
 #define CS_PIN PA15           // Define Chip Select pin
+#define DEBOUNCE_DELAY 50  // 50 milliseconds debounce delay
 
 uint8_t rxbytes[8];
 long currentPosition = 0;         // Current position of the stepper motor
-const long maxPosition = 100000;  // Maximum position (100,000 steps)
+const long maxPosition = 12000;  // Maximum position (100,000 steps)
 const int maxSpeed = 400;         // Maximum speed in steps per second
-const int acceleration = 200;     // Acceleration in steps per second^2
+const int acceleration = 400;     // Acceleration in steps per second^2
 
 // Define an alternative SPI interface
 SPIClass etx_spi(PB5, PB4, PB3);  // MOSI, MISO, SCLK
@@ -40,22 +41,54 @@ bool greenLedState = false;  // Variable to keep track of the LED state
 bool redLedState = false;    // Variable to keep track of the LED state
 
 void homeStepper() {
-  // Assuming the limit switch is normally closed and opens when hit
   pinMode(LIMIT_SWITCH_PIN, INPUT_PULLUP);
-  Serial2.printf("wait for limit\n");
-  // Move stepper until limit switch is activated
-  while (digitalRead(LIMIT_SWITCH_PIN) == HIGH) {
+  Serial2.printf("Searching for home limit...\n");
+
+  bool limitSwitchState = HIGH;
+  unsigned long lastDebounceTime = 0;
+  unsigned long debounceDelay = DEBOUNCE_DELAY;
+  long speed = 0;
+  long stepDelay = 500;  // Initial delay in microseconds
+  const int maxHomeSpeed = 400;  // Maximum speed for homing in steps per second
+  const int homeAcceleration = 100;  // Acceleration in steps per second^2
+
+  while (true) {
+    int reading = digitalRead(LIMIT_SWITCH_PIN);
+
+    if (reading != limitSwitchState) {
+      lastDebounceTime = millis();
+    }
+
+    if ((millis() - lastDebounceTime) > debounceDelay) {
+      if (reading == HIGH) {
+        limitSwitchState = reading;
+        break;  // Limit switch activated, exit the loop
+      }
+    }
+
     drv8711.clear_status();
-    digitalWrite(DIR_PIN, LOW);  // Move towards home
+    digitalWrite(DIR_PIN, HIGH);  // Move towards home
+    
+    // Acceleration logic
+    if (speed < maxHomeSpeed) {
+      speed += homeAcceleration;
+      if (speed > maxHomeSpeed) {
+        speed = maxHomeSpeed;
+      }
+      stepDelay = 500000 / speed;  // Calculate step delay in microseconds
+    }
+
     digitalWrite(STEP_PIN, HIGH);
-    delayMicroseconds(500);  // Adjust delay for your stepper motor speed
+    delayMicroseconds(stepDelay / 2);  // Half-step pulse
     digitalWrite(STEP_PIN, LOW);
-    delayMicroseconds(500);
+    delayMicroseconds(stepDelay / 2);
+
+
     greenLedState = !greenLedState;                       // Toggle the LED state
     digitalWrite(GREEN_LED, greenLedState ? HIGH : LOW);  // Set the LED state
     Serial2.printf("home status %d\n", drv8711.get_status());
   }
-  // Stop the motor after homing
+
   digitalWrite(STEP_PIN, LOW);
   currentPosition = 0;  // Set current position to 0 after homing
 }
@@ -67,7 +100,7 @@ void moveToPosition(long position) {
   targetPosition = position;
   stepsToMove = targetPosition - currentPosition;
   direction = stepsToMove > 0;
-  digitalWrite(DIR_PIN, direction ? HIGH : LOW);
+  digitalWrite(DIR_PIN, direction ? LOW : HIGH);
   stepsToMove = abs(stepsToMove);
   accelDist = (long)pow(maxSpeed, 2) / (2 * acceleration);  // Distance needed to accelerate/decelerate
   currentStep = 0;
@@ -118,46 +151,42 @@ void setup() {
   delay(10);
 
   // Home the stepper motor
-  //homeStepper();
-
+  homeStepper();
 }
 
 void loop() {
-
   if (Serial2.available()) {
     rxbytes[0] = Serial2.read();
     // Command Decoder
     switch (rxbytes[0]) {
-      case '0':
+      case '1':
         newPosition = 0;
         break;
-      case '1':  // Set Analogue Output 1
-      newPosition = 3000;
-        break;
-      case '2':
-      newPosition = 7000;
+      case '2':  // Set Analogue Output 1
+        newPosition = 3000;
         break;
       case '3':
-      newPosition = 10000;
+        newPosition = 7000;
+        break;
+      case '4':
+        newPosition = 12000;
         break;
       default:
         // statements
         break;
     }
-    //long newPosition = map(rxbytes[0], 0, 255, 0, maxPosition);
     moveToPosition(newPosition);
     Serial2.printf("moveToPosition(%d) \n", newPosition);
     redLedState = !redLedState;                       // Toggle the LED state
     digitalWrite(RED_LED, redLedState ? HIGH : LOW);  // Set the LED state
   }
 
-
   // Toggle the LED state
   greenLedState = !greenLedState;
   digitalWrite(GREEN_LED, greenLedState ? HIGH : LOW);
 
   // Print the status of the DRV8711
-  Serial2.printf("loop status %d, currentPosition %d\n", drv8711.get_status(),currentPosition);
+  Serial2.printf("STATUS_REG %d, CurrentPOS %d, \n", drv8711.get_status(), currentPosition);
 }
 
 void TIM3_IT_callback(void) {
@@ -169,42 +198,50 @@ void TIM2_IT_callback(void) {
   static unsigned long lastStepTime = 0;
 
   if (moving) {
-    // Calculate speed based on acceleration profile
-    if (currentStep < accelDist) {
-      speed = sqrt(2 * acceleration * currentStep);
-    } else if (currentStep >= stepsToMove - accelDist) {
-      speed = sqrt(2 * acceleration * (stepsToMove - currentStep));
+    // Read the state of the limit switch
+    int limitSwitchState = digitalRead(LIMIT_SWITCH_PIN);
+
+    // If limit switch is activated and the direction is not away from the limit switch, stop the motor
+    if (limitSwitchState == HIGH && !direction) {
+      moving = false;
+      Serial2.printf("Limit switch activated. Stopping motor.\n");
     } else {
-      speed = maxSpeed;
-    }
-
-    // Limit speed to maxSpeed
-    if (speed > maxSpeed) {
-      speed = maxSpeed;
-    }
-
-    // Calculate step delay
-    stepDelay = 200000 / speed;
-
-    // Perform step if enough time has passed
-    unsigned long currentTime = micros();
-    if (currentTime - lastStepTime >= stepDelay) {
-      lastStepTime += stepDelay;  // Update lastStepTime for precise timing
-      //drv8711.clear_status();
-      digitalWrite(STEP_PIN, HIGH);
-      delayMicroseconds(stepDelay / 2);  // Half-step pulse
-      digitalWrite(STEP_PIN, LOW);
-
-      // Update position and step count
-      currentStep++;
-      currentPosition += direction ? 1 : -1;
-
-      // Check if movement is complete
-      if (currentStep >= stepsToMove) {
-        moving = false;
-        currentStep = 0;
+      // Calculate speed based on acceleration profile
+      if (currentStep < accelDist) {
+        speed = sqrt(2 * acceleration * currentStep);
+      } else if (currentStep >= stepsToMove - accelDist) {
+        speed = sqrt(2 * acceleration * (stepsToMove - currentStep));
+      } else {
+        speed = maxSpeed;
       }
+
+      // Limit speed to maxSpeed
+      if (speed > maxSpeed) {
+        speed = maxSpeed;
+      }
+
+      // Calculate step delay
+      stepDelay = 200000 / speed;
+
+      // Perform step if enough time has passed
+      unsigned long currentTime = micros();
+      if (currentTime - lastStepTime >= stepDelay) {
+        lastStepTime += stepDelay;  // Update lastStepTime for precise timing
+        digitalWrite(STEP_PIN, HIGH);
+        delayMicroseconds(stepDelay / 2);  // Half-step pulse
+        digitalWrite(STEP_PIN, LOW);
+
+        // Update position and step count
+        currentStep++;
+        currentPosition += direction ? 1 : -1;
+
+        // Check if movement is complete
+        if (currentStep >= stepsToMove) {
+          moving = false;
+          currentStep = 0;
+        }
+      }
+      drv8711.clear_status();
     }
-    drv8711.clear_status();
   }
 }

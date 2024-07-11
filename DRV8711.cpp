@@ -5,7 +5,7 @@
 DRV8711::DRV8711(SPIClass &spi, byte CSpin) : _spi(spi), _CSpin(CSpin), control_reg(0), drive_level(0) {}
 
 void DRV8711::begin(byte drive, unsigned int microsteps) {
-    begin(drive, microsteps, DRV8711DEC_SLOW_DECAY, DRV8711DRV_HIGH_100mA, DRV8711DRV_LOW_100mA, DRV8711CTL_DEADTIME_400ns);
+    begin(drive, microsteps, DRV8711DEC_SLOW_DECAY, DRV8711DRV_HIGH_50mA, DRV8711DRV_LOW_100mA, DRV8711CTL_DEADTIME_850ns);
 }
 
 void DRV8711::begin(byte drive, unsigned int microsteps, byte decay_mode, byte gate_speed, byte gate_drive, byte deadtime) {
@@ -59,10 +59,6 @@ void DRV8711::set_enable(bool enable) {
     write_reg_field(ENBL_FIELD, enable ? 1 : 0);
 }
 
-void DRV8711::power(byte code) {
-    // This method is left blank, as it's implementation specific
-}
-
 void DRV8711::end() {
     _spi.end();
 }
@@ -106,6 +102,9 @@ void DRV8711::enable_motor() {
     write_reg_field(ENBL_FIELD, 1); // Set bit 0 of CTRL register to 1
 }
 
+void DRV8711::disable_motor() {
+    write_reg_field(ENBL_FIELD, 0); // Set bit 0 of CTRL register to 0
+}
 void DRV8711::setup_spi() {
     _spi.begin();
     _spi.setClockDivider(SPI_CLOCK_DIV8);

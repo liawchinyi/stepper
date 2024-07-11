@@ -119,8 +119,6 @@
 #define DRV8711STS_OVERCUR_B      0x004
 #define DRV8711STS_OVERCUR_A      0x002
 #define DRV8711STS_OVERTEMP       0x001
-// Define DRV8711 register fields
-#define ENBL_FIELD    0x0001
 
 // Define DRV8711 control register bits
 #define DRV8711CTL_ENBL      0x0001
@@ -179,6 +177,7 @@ public:
     void set_gain(uint8_t gain);
     void configureCtrlRegister();
     void enable_motor();
+    void disable_motor();
     void decode_field(int field, int &reg, int &shf, int &bits, int &mask);
    
 private:
