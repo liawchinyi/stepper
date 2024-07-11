@@ -18,7 +18,7 @@ uint8_t rxbytes[8];
 long currentPosition = 0;         // Current position of the stepper motor
 const long maxPosition = 12000;  // Maximum position (100,000 steps)
 const int maxSpeed = 400;         // Maximum speed in steps per second
-const int acceleration = 400;     // Acceleration in steps per second^2
+const int acceleration = 350;     // Acceleration in steps per second^2
 
 // Define an alternative SPI interface
 SPIClass etx_spi(PB5, PB4, PB3);  // MOSI, MISO, SCLK
@@ -221,7 +221,7 @@ void TIM2_IT_callback(void) {
       }
 
       // Calculate step delay
-      stepDelay = 200000 / speed;
+      stepDelay = 220000 / speed;
 
       // Perform step if enough time has passed
       unsigned long currentTime = micros();
