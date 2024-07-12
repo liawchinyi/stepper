@@ -15,7 +15,7 @@
 #define DEBOUNCE_DELAY 50     // 50 milliseconds debounce delay
 
 uint8_t rxbytes[8];
-long currentPosition = 0;        // Current position of the stepper motor
+long currentPosition = 10000;        // Current position of the stepper motor
 const long maxPosition = 12000;  // Maximum position (100,000 steps)
 const int maxSpeed = 370;        // Maximum speed in steps per second
 const int acceleration = 350;    // Acceleration in steps per second^2
@@ -39,58 +39,6 @@ long speed = 0;
 long stepDelay = 0;
 bool greenLedState = false;  // Variable to keep track of the LED state
 bool redLedState = false;    // Variable to keep track of the LED state
-
-// Homing function
-void homeStepper() {
-  pinMode(LIMIT_SWITCH_PIN, INPUT_PULLUP);
-  Serial2.printf("Searching for home limit...\n");
-
-  bool limitSwitchState = HIGH;
-  unsigned long lastDebounceTime = 0;
-  unsigned long debounceDelay = DEBOUNCE_DELAY;
-  long speed = 0;
-  long stepDelay = 500;              // Initial delay in microseconds
-  const int maxHomeSpeed = 400;      // Maximum speed for homing in steps per second
-  const int homeAcceleration = 100;  // Acceleration in steps per second^2
-
-  while (true) {
-    int reading = digitalRead(LIMIT_SWITCH_PIN);
-
-    if (reading != limitSwitchState) {
-      lastDebounceTime = millis();
-    }
-
-    if ((millis() - lastDebounceTime) > debounceDelay) {
-      if (reading == HIGH) {
-        limitSwitchState = reading;
-        break;  // Limit switch activated, exit the loop
-      }
-    }
-
-    drv8711.clear_status();
-    digitalWrite(DIR_PIN, HIGH);  // Move towards home
-
-    // Acceleration logic
-    if (speed < maxHomeSpeed) {
-      speed += homeAcceleration;
-      if (speed > maxHomeSpeed) {
-        speed = maxHomeSpeed;
-      }
-      stepDelay = 500000 / speed;  // Calculate step delay in microseconds
-    }
-
-    digitalWrite(STEP_PIN, HIGH);
-    delayMicroseconds(stepDelay / 2);  // Half-step pulse
-    digitalWrite(STEP_PIN, LOW);
-    delayMicroseconds(stepDelay / 2);
-
-    greenLedState = !greenLedState;                       // Toggle the LED state
-    digitalWrite(GREEN_LED, greenLedState ? HIGH : LOW);  // Set the LED state
-  }
-
-  digitalWrite(STEP_PIN, LOW);
-  currentPosition = 0;  // Set current position to 0 after homing
-}
 
 // Function to move the stepper motor to a specified position
 void moveToPosition(long position) {
@@ -122,7 +70,7 @@ void setup() {
   MyTim3->attachInterrupt(TIM3_IT_callback);
   MyTim3->resume();  // Start Timer Interrupt
 
-  MyTim2->setOverflow(20, MICROSEC_FORMAT);  // 20 microseconds
+  MyTim2->setOverflow(15, MICROSEC_FORMAT);  // 15 microseconds
   MyTim2->attachInterrupt(TIM2_IT_callback);
   MyTim2->resume();  // Start Timer Interrupt
 
@@ -133,6 +81,7 @@ void setup() {
   pinMode(SLEEPN, OUTPUT);
   pinMode(GREEN_LED, OUTPUT);
   pinMode(RED_LED, OUTPUT);
+  pinMode(PB4, INPUT_PULLUP);
 
   // Reset DRV8711
   digitalWrite(RESET_PIN, HIGH);
@@ -151,8 +100,8 @@ void setup() {
   drv8711.clear_status();  // Clear status
   delay(10);
 
-  // Home the stepper motor
-  homeStepper();
+
+  moveToPosition(0);
 }
 
 // Configuration function for DRV8711
@@ -259,7 +208,7 @@ void TIM2_IT_callback(void) {
       }
 
       // Calculate step delay
-      stepDelay = 210000 / speed;
+      stepDelay = 220000 / speed;
 
       // Perform step if enough time has passed
       unsigned long currentTime = micros();
