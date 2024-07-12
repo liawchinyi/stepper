@@ -40,6 +40,7 @@ long stepDelay = 0;
 bool greenLedState = false;  // Variable to keep track of the LED state
 bool redLedState = false;    // Variable to keep track of the LED state
 
+// Homing function
 void homeStepper() {
   pinMode(LIMIT_SWITCH_PIN, INPUT_PULLUP);
   Serial2.printf("Searching for home limit...\n");
@@ -83,16 +84,16 @@ void homeStepper() {
     digitalWrite(STEP_PIN, LOW);
     delayMicroseconds(stepDelay / 2);
 
-
     greenLedState = !greenLedState;                       // Toggle the LED state
     digitalWrite(GREEN_LED, greenLedState ? HIGH : LOW);  // Set the LED state
-    Serial2.printf("home status %d\n", drv8711.get_status());
+    //Serial2.printf("home status %d\n", drv8711.get_status());
   }
 
   digitalWrite(STEP_PIN, LOW);
   currentPosition = 0;  // Set current position to 0 after homing
 }
 
+// Function to move the stepper motor to a specified position
 void moveToPosition(long position) {
   if (position < 0) position = 0;                      // Ensure position is not negative
   if (position > maxPosition) position = maxPosition;  // Ensure position does not exceed maxPosition
@@ -143,15 +144,50 @@ void setup() {
   delay(10);
   digitalWrite(DIR_PIN, LOW);
 
-  // Initialize DRV8711 with full drive and 16 microsteps
+  // Initialize DRV8711
   drv8711.begin(DRV8711_FULL, 4);
-  drv8711.set_torque(255);  // Set maximum torque
+  configureDRV8711();
   drv8711.enable_motor();   // Enable motor driver
-  drv8711.clear_status();   // Enable motor driver
+  drv8711.clear_status();   // Clear status
   delay(10);
 
   // Home the stepper motor
   homeStepper();
+}
+
+// Configuration function for DRV8711
+void configureDRV8711() {
+  // TORQUE Register (0x01): Set maximum torque
+  drv8711.set_reg(0x01, 0xFF);  // TORQUE = 255
+
+  // OFF Register (0x02): Set off time for the PWM
+  //drv8711.set_reg(0x02, 0x30);  // OFF = 48 (example value)
+
+  // BLANK Register (0x03): Set blanking time for the PWM
+  //drv8711.set_reg(0x03, 0x80);  // BLANK = 128 (example value)
+
+  // DECAY Register (0x04): Configure decay mode and decay time
+  //drv8711.set_reg(0x04, 0x10);  // DECAY = 16 (example value)
+
+  // STALL Register (0x05): Configure stall detection
+  //drv8711.set_reg(0x05, 0x40);  // STALL = 64 (example value)
+
+  // DRIVE Register (0x06): Configure gate drive current and timing
+  // Gate Drive Strength: IDRIVEP (Peak Gate Drive Current, Source) and IDRIVEN (Peak Gate Drive Current, Sink)
+  // Dead Time: DTIME (Dead Time between High and Low Side FETs)
+  //drv8711.set_reg(0x06, 0xAF);  // IDRIVEP = 150mA, IDRIVEN = 300mA, DTIME = 850ns
+
+  // CTRL Register (0x00): Set control register settings
+  drv8711.set_reg(0x00, 0x30);  // ENBL = 1, RDIR = 0, RSTEP = 0, MODE = 4, EXSTALL = 0, ISGAIN = 1, DTIME = 2
+
+  // Print the configured values
+  Serial2.printf("TORQUE: %d\n", drv8711.get_reg(0x01));
+  Serial2.printf("OFF: %d\n", drv8711.get_reg(0x02));
+  Serial2.printf("BLANK: %d\n", drv8711.get_reg(0x03));
+  Serial2.printf("DECAY: %d\n", drv8711.get_reg(0x04));
+  Serial2.printf("STALL: %d\n", drv8711.get_reg(0x05));
+  Serial2.printf("DRIVE: %d\n", drv8711.get_reg(0x06));
+  Serial2.printf("CTRL: %d\n", drv8711.get_reg(0x00));
 }
 
 void loop() {
@@ -169,7 +205,7 @@ void loop() {
         newPosition = 7000;
         break;
       case '4':
-        newPosition = 12000;
+        newPosition = 11000;
         break;
       default:
         // statements
@@ -186,7 +222,7 @@ void loop() {
   digitalWrite(GREEN_LED, greenLedState ? HIGH : LOW);
 
   // Print the status of the DRV8711
-  Serial2.printf("STATUS_REG %d, CurrentPOS %d, \n", drv8711.get_status(), currentPosition);
+  //Serial2.printf("STATUS_REG %d, CurrentPOS %d, \n", drv8711.get_status(), currentPosition);
 }
 
 void TIM3_IT_callback(void) {

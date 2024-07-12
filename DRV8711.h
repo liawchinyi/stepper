@@ -1,5 +1,5 @@
-#ifndef DRV8711_h
-#define DRV8711_h
+#ifndef DRV8711_H
+#define DRV8711_H
 
 #include <Arduino.h>
 #include <SPI.h>
@@ -179,7 +179,7 @@ public:
     void enable_motor();
     void disable_motor();
     void decode_field(int field, int &reg, int &shf, int &bits, int &mask);
-   
+
 private:
     void setup_spi();
     char transfer(char data);
@@ -190,4 +190,4 @@ private:
     byte drive_level;
 };
 
-#endif
+#endif // DRV8711_H
