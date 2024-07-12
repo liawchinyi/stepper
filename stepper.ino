@@ -17,8 +17,8 @@
 uint8_t rxbytes[8];
 long currentPosition = 10000;        // Current position of the stepper motor
 const long maxPosition = 12000;  // Maximum position (100,000 steps)
-const int maxSpeed = 380;        // Maximum speed in steps per second
-const int acceleration = 350;    // Acceleration in steps per second^2
+const int maxSpeed = 400;        // Maximum speed in steps per second
+const int acceleration = 300;    // Acceleration in steps per second^2
 
 // Define an alternative SPI interface
 SPIClass etx_spi(PB5, PB4, PB3);  // MOSI, MISO, SCLK
@@ -70,7 +70,7 @@ void setup() {
   MyTim3->attachInterrupt(TIM3_IT_callback);
   MyTim3->resume();  // Start Timer Interrupt
 
-  MyTim2->setOverflow(15, MICROSEC_FORMAT);  // 15 microseconds
+  MyTim2->setOverflow(15, MICROSEC_FORMAT);  // 20 microseconds
   MyTim2->attachInterrupt(TIM2_IT_callback);
   MyTim2->resume();  // Start Timer Interrupt
 
@@ -171,7 +171,8 @@ void loop() {
   digitalWrite(GREEN_LED, greenLedState ? HIGH : LOW);
 
   // Print the status of the DRV8711
-  //Serial2.printf("STATUS_REG %d, CurrentPOS %d, \n", drv8711.get_status(), currentPosition);
+  Serial2.printf("CTRL: %d STATUS_REG %d, CurrentPOS %d, \n", drv8711.get_reg(0x00), drv8711.get_status(), currentPosition);
+  //Serial2.printf("CTRL: %d , CurrentPOS %d, \n", drv8711.get_reg(0x00), currentPosition);
 }
 
 void TIM3_IT_callback(void) {
