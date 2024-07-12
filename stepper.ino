@@ -17,7 +17,7 @@
 uint8_t rxbytes[8];
 long currentPosition = 10000;        // Current position of the stepper motor
 const long maxPosition = 12000;  // Maximum position (100,000 steps)
-const int maxSpeed = 370;        // Maximum speed in steps per second
+const int maxSpeed = 380;        // Maximum speed in steps per second
 const int acceleration = 350;    // Acceleration in steps per second^2
 
 // Define an alternative SPI interface
@@ -81,7 +81,6 @@ void setup() {
   pinMode(SLEEPN, OUTPUT);
   pinMode(GREEN_LED, OUTPUT);
   pinMode(RED_LED, OUTPUT);
-  pinMode(PB4, INPUT_PULLUP);
 
   // Reset DRV8711
   digitalWrite(RESET_PIN, HIGH);
@@ -208,7 +207,7 @@ void TIM2_IT_callback(void) {
       }
 
       // Calculate step delay
-      stepDelay = 220000 / speed;
+      stepDelay = 210000 / speed;
 
       // Perform step if enough time has passed
       unsigned long currentTime = micros();
