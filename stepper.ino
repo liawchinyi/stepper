@@ -12,13 +12,13 @@
 #define RED_LED PA8
 #define LIMIT_SWITCH_PIN PA1  // Define your limit switch pin
 #define CS_PIN PA15           // Define Chip Select pin
-#define DEBOUNCE_DELAY 50  // 50 milliseconds debounce delay
+#define DEBOUNCE_DELAY 50     // 50 milliseconds debounce delay
 
 uint8_t rxbytes[8];
-long currentPosition = 0;         // Current position of the stepper motor
+long currentPosition = 0;        // Current position of the stepper motor
 const long maxPosition = 12000;  // Maximum position (100,000 steps)
-const int maxSpeed = 400;         // Maximum speed in steps per second
-const int acceleration = 350;     // Acceleration in steps per second^2
+const int maxSpeed = 370;        // Maximum speed in steps per second
+const int acceleration = 350;    // Acceleration in steps per second^2
 
 // Define an alternative SPI interface
 SPIClass etx_spi(PB5, PB4, PB3);  // MOSI, MISO, SCLK
@@ -49,8 +49,8 @@ void homeStepper() {
   unsigned long lastDebounceTime = 0;
   unsigned long debounceDelay = DEBOUNCE_DELAY;
   long speed = 0;
-  long stepDelay = 500;  // Initial delay in microseconds
-  const int maxHomeSpeed = 400;  // Maximum speed for homing in steps per second
+  long stepDelay = 500;              // Initial delay in microseconds
+  const int maxHomeSpeed = 400;      // Maximum speed for homing in steps per second
   const int homeAcceleration = 100;  // Acceleration in steps per second^2
 
   while (true) {
@@ -69,7 +69,7 @@ void homeStepper() {
 
     drv8711.clear_status();
     digitalWrite(DIR_PIN, HIGH);  // Move towards home
-    
+
     // Acceleration logic
     if (speed < maxHomeSpeed) {
       speed += homeAcceleration;
@@ -86,7 +86,6 @@ void homeStepper() {
 
     greenLedState = !greenLedState;                       // Toggle the LED state
     digitalWrite(GREEN_LED, greenLedState ? HIGH : LOW);  // Set the LED state
-    //Serial2.printf("home status %d\n", drv8711.get_status());
   }
 
   digitalWrite(STEP_PIN, LOW);
@@ -123,7 +122,7 @@ void setup() {
   MyTim3->attachInterrupt(TIM3_IT_callback);
   MyTim3->resume();  // Start Timer Interrupt
 
-  MyTim2->setOverflow(20, MICROSEC_FORMAT);  // 30 microseconds
+  MyTim2->setOverflow(20, MICROSEC_FORMAT);  // 20 microseconds
   MyTim2->attachInterrupt(TIM2_IT_callback);
   MyTim2->resume();  // Start Timer Interrupt
 
@@ -147,8 +146,9 @@ void setup() {
   // Initialize DRV8711
   drv8711.begin(DRV8711_FULL, 4);
   configureDRV8711();
-  drv8711.enable_motor();   // Enable motor driver
-  drv8711.clear_status();   // Clear status
+
+  drv8711.enable_motor();  // Enable motor driver
+  drv8711.clear_status();  // Clear status
   delay(10);
 
   // Home the stepper motor
@@ -156,6 +156,7 @@ void setup() {
 }
 
 // Configuration function for DRV8711
+// HSBB6066 N-Ch 60V Fast Switching MOSFETs
 void configureDRV8711() {
   // TORQUE Register (0x01): Set maximum torque
   drv8711.set_reg(0x01, 0x1FF);  // TORQUE = 255
@@ -170,12 +171,12 @@ void configureDRV8711() {
   //drv8711.set_reg(0x04, 0x110);  // DECAY = 16 (example value)
 
   // STALL Register (0x05): Configure stall detection
-  //drv8711.set_reg(0x05, 0x040);  // STALL = 64 (example value)
+  //drv8711.set_reg(0x05, 0xC40);  // STALL = 64 (example value)
 
   // DRIVE Register (0x06): Configure gate drive current and timing
   // Gate Drive Strength: IDRIVEP (Peak Gate Drive Current, Source) and IDRIVEN (Peak Gate Drive Current, Sink)
   // Dead Time: DTIME (Dead Time between High and Low Side FETs)
-  //drv8711.set_reg(0x06, 0x000);  // IDRIVEP = 150mA, IDRIVEN = 300mA, DTIME = 850ns
+  //drv8711.set_reg(0x06, 0xA00);  // IDRIVEP = 150mA, IDRIVEN = 300mA, DTIME = 850ns
 
   // CTRL Register (0x00): Set control register settings
   drv8711.set_reg(0x00, 0xC10);  // ENBL = 1, RDIR = 0, RSTEP = 0, MODE = 4, EXSTALL = 0, ISGAIN = 1, DTIME = 2
@@ -202,7 +203,7 @@ void loop() {
         newPosition = 3000;
         break;
       case '3':
-        newPosition = 7000;
+        newPosition = 6000;
         break;
       case '4':
         newPosition = 11000;
@@ -241,6 +242,7 @@ void TIM2_IT_callback(void) {
     if (limitSwitchState == HIGH && !direction) {
       moving = false;
       Serial2.printf("Limit switch activated. Stopping motor.\n");
+      currentPosition = 0;
     } else {
       // Calculate speed based on acceleration profile
       if (currentStep < accelDist) {
@@ -257,7 +259,7 @@ void TIM2_IT_callback(void) {
       }
 
       // Calculate step delay
-      stepDelay = 220000 / speed;
+      stepDelay = 210000 / speed;
 
       // Perform step if enough time has passed
       unsigned long currentTime = micros();

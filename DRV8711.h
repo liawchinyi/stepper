@@ -19,6 +19,17 @@
 #define STALL_REG  5
 #define DRIVE_REG  6
 #define STATUS_REG 7
+// IDRIVE values
+#define DRV8711DRV_IDRIVE_50mA   0x0
+#define DRV8711DRV_IDRIVE_100mA  0x1
+#define DRV8711DRV_IDRIVE_150mA  0x2
+#define DRV8711DRV_IDRIVE_200mA  0x3
+
+// TDRIVE values
+#define DRV8711DRV_TDRIVE_250ns  0x0
+#define DRV8711DRV_TDRIVE_500ns  0x1
+#define DRV8711DRV_TDRIVE_1us    0x2
+#define DRV8711DRV_TDRIVE_2us    0x3
 
 // CTRL_REG settings
 #define DRV8711CTL_DEADTIME_400ns 0x000
