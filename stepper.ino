@@ -158,27 +158,27 @@ void setup() {
 // Configuration function for DRV8711
 void configureDRV8711() {
   // TORQUE Register (0x01): Set maximum torque
-  drv8711.set_reg(0x01, 0xFF);  // TORQUE = 255
+  drv8711.set_reg(0x01, 0x1FF);  // TORQUE = 255
 
   // OFF Register (0x02): Set off time for the PWM
-  //drv8711.set_reg(0x02, 0x30);  // OFF = 48 (example value)
+  //drv8711.set_reg(0x02, 0x30);  // OFF = 48 (example value) 0x30H
 
   // BLANK Register (0x03): Set blanking time for the PWM
-  //drv8711.set_reg(0x03, 0x80);  // BLANK = 128 (example value)
+  //drv8711.set_reg(0x03, 0x80);  // BLANK = 128 (example value) 0x80h
 
   // DECAY Register (0x04): Configure decay mode and decay time
-  //drv8711.set_reg(0x04, 0x10);  // DECAY = 16 (example value)
+  //drv8711.set_reg(0x04, 0x110);  // DECAY = 16 (example value)
 
   // STALL Register (0x05): Configure stall detection
-  //drv8711.set_reg(0x05, 0x40);  // STALL = 64 (example value)
+  //drv8711.set_reg(0x05, 0x040);  // STALL = 64 (example value)
 
   // DRIVE Register (0x06): Configure gate drive current and timing
   // Gate Drive Strength: IDRIVEP (Peak Gate Drive Current, Source) and IDRIVEN (Peak Gate Drive Current, Sink)
   // Dead Time: DTIME (Dead Time between High and Low Side FETs)
-  //drv8711.set_reg(0x06, 0xAF);  // IDRIVEP = 150mA, IDRIVEN = 300mA, DTIME = 850ns
+  //drv8711.set_reg(0x06, 0x000);  // IDRIVEP = 150mA, IDRIVEN = 300mA, DTIME = 850ns
 
   // CTRL Register (0x00): Set control register settings
-  drv8711.set_reg(0x00, 0x30);  // ENBL = 1, RDIR = 0, RSTEP = 0, MODE = 4, EXSTALL = 0, ISGAIN = 1, DTIME = 2
+  drv8711.set_reg(0x00, 0xC10);  // ENBL = 1, RDIR = 0, RSTEP = 0, MODE = 4, EXSTALL = 0, ISGAIN = 1, DTIME = 2
 
   // Print the configured values
   Serial2.printf("TORQUE: %d\n", drv8711.get_reg(0x01));
