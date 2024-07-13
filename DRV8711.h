@@ -42,6 +42,11 @@
 #define DRV8711CTL_IGAIN_20       0x200
 #define DRV8711CTL_IGAIN_40       0x300
 
+#define DRV8711CTL_MODE_4         0x002
+#define DRV8711CTL_MODE_8         0x003
+#define DRV8711CTL_MODE_16        0x004
+#define DRV8711CTL_MODE_32        0x005
+
 #define DRV8711CTL_STALL_INTERNAL 0x000
 #define DRV8711CTL_STALL_EXTERNAL 0x080
 
@@ -174,10 +179,10 @@ public:
     DRV8711(SPIClass &spi, byte CSpin);
 
     void begin(byte drive, unsigned int microsteps);
-    void begin(byte drive, unsigned int microsteps, byte decay_mode, byte gate_speed, byte gate_drive, byte deadtime);
-    void set_reg(byte reg, int val);
-    int get_reg(byte reg);
-    byte get_status();
+    void begin(byte drive, unsigned int microsteps, unsigned int decay_mode, unsigned int gate_speed, unsigned int gate_drive, unsigned int deadtime);
+    void set_reg(byte reg, unsigned int val);
+    unsigned int get_reg(byte reg);
+    unsigned int  get_status();
     void clear_status();
     void set_enable(bool enable);
     void power(byte code);
@@ -197,7 +202,9 @@ private:
 
     SPIClass &_spi;
     byte _CSpin;
-    int control_reg;
+    int CTRL_reg,TORQUE_reg,OFF_reg,BLANK_reg,DECAY_reg,STALL_reg,DRIVE_reg,STATUS_reg;
+
+
     byte drive_level;
 };
 

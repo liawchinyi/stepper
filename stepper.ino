@@ -15,7 +15,7 @@
 #define DEBOUNCE_DELAY 50     // 50 milliseconds debounce delay
 
 uint8_t rxbytes[8];
-long currentPosition = 10000;        // Current position of the stepper motor
+long currentPosition = 10000;    // Current position of the stepper motor
 const long maxPosition = 12000;  // Maximum position (100,000 steps)
 const int maxSpeed = 400;        // Maximum speed in steps per second
 const int acceleration = 300;    // Acceleration in steps per second^2
@@ -70,7 +70,7 @@ void setup() {
   MyTim3->attachInterrupt(TIM3_IT_callback);
   MyTim3->resume();  // Start Timer Interrupt
 
-  MyTim2->setOverflow(15, MICROSEC_FORMAT);  // 20 microseconds
+  MyTim2->setOverflow(10, MICROSEC_FORMAT);  // 20 microseconds
   MyTim2->attachInterrupt(TIM2_IT_callback);
   MyTim2->resume();  // Start Timer Interrupt
 
@@ -92,15 +92,23 @@ void setup() {
   digitalWrite(DIR_PIN, LOW);
 
   // Initialize DRV8711
-  drv8711.begin(DRV8711_FULL, 4);
-  configureDRV8711();
+  drv8711.begin(DRV8711_FULL, 0x02);
 
   drv8711.enable_motor();  // Enable motor driver
   drv8711.clear_status();  // Clear status
   delay(10);
 
+  // Print the configured values
+  Serial2.printf("CTRL: 0x%x\n", drv8711.get_reg(0x00));
+  Serial2.printf("TORQUE: 0x%x\n", drv8711.get_reg(0x01));
+  Serial2.printf("OFF: 0x%x\n", drv8711.get_reg(0x02));
+  Serial2.printf("BLANK: 0x%x\n", drv8711.get_reg(0x03));
+  Serial2.printf("DECAY: 0x%x\n", drv8711.get_reg(0x04));
+  Serial2.printf("STALL: 0x%x\n", drv8711.get_reg(0x05));
+  Serial2.printf("DRIVE: 0x%d\n", drv8711.get_reg(0x06));
+  Serial2.printf("STATUS: 0x%x\n", drv8711.get_reg(0x07));
 
-  moveToPosition(0);
+  //moveToPosition(0);
 }
 
 // Configuration function for DRV8711
@@ -110,33 +118,24 @@ void configureDRV8711() {
   drv8711.set_reg(0x01, 0x1FF);  // TORQUE = 255
 
   // OFF Register (0x02): Set off time for the PWM
-  //drv8711.set_reg(0x02, 0x30);  // OFF = 48 (example value) 0x30H
+  drv8711.set_reg(0x02, 0x30);  // OFF = 48 (example value) 0x30H
 
   // BLANK Register (0x03): Set blanking time for the PWM
-  //drv8711.set_reg(0x03, 0x80);  // BLANK = 128 (example value) 0x80h
+  drv8711.set_reg(0x03, 0x80);  // BLANK = 128 (example value) 0x80h
 
   // DECAY Register (0x04): Configure decay mode and decay time
-  //drv8711.set_reg(0x04, 0x110);  // DECAY = 16 (example value)
+  drv8711.set_reg(0x04, 0x110);  // DECAY = 16 (example value)
 
   // STALL Register (0x05): Configure stall detection
-  //drv8711.set_reg(0x05, 0xC40);  // STALL = 64 (example value)
+  drv8711.set_reg(0x05, 0xC40);  // STALL = 64 (example value)
 
   // DRIVE Register (0x06): Configure gate drive current and timing
   // Gate Drive Strength: IDRIVEP (Peak Gate Drive Current, Source) and IDRIVEN (Peak Gate Drive Current, Sink)
   // Dead Time: DTIME (Dead Time between High and Low Side FETs)
-  //drv8711.set_reg(0x06, 0xA00);  // IDRIVEP = 150mA, IDRIVEN = 300mA, DTIME = 850ns
+  drv8711.set_reg(0x06, 0xA00);  // IDRIVEP = 150mA, IDRIVEN = 300mA, DTIME = 850ns
 
   // CTRL Register (0x00): Set control register settings
   drv8711.set_reg(0x00, 0xC10);  // ENBL = 1, RDIR = 0, RSTEP = 0, MODE = 4, EXSTALL = 0, ISGAIN = 1, DTIME = 2
-
-  // Print the configured values
-  Serial2.printf("TORQUE: %d\n", drv8711.get_reg(0x01));
-  Serial2.printf("OFF: %d\n", drv8711.get_reg(0x02));
-  Serial2.printf("BLANK: %d\n", drv8711.get_reg(0x03));
-  Serial2.printf("DECAY: %d\n", drv8711.get_reg(0x04));
-  Serial2.printf("STALL: %d\n", drv8711.get_reg(0x05));
-  Serial2.printf("DRIVE: %d\n", drv8711.get_reg(0x06));
-  Serial2.printf("CTRL: %d\n", drv8711.get_reg(0x00));
 }
 
 void loop() {
@@ -171,7 +170,7 @@ void loop() {
   digitalWrite(GREEN_LED, greenLedState ? HIGH : LOW);
 
   // Print the status of the DRV8711
-  Serial2.printf("CTRL: %d STATUS_REG %d, CurrentPOS %d, \n", drv8711.get_reg(0x00), drv8711.get_status(), currentPosition);
+  //Serial2.printf("CTRL: %d, STATUS_REG %d, CurrentPOS %d, \n", drv8711.get_reg(0x00), drv8711.get_status(), currentPosition);
   //Serial2.printf("CTRL: %d , CurrentPOS %d, \n", drv8711.get_reg(0x00), currentPosition);
 }
 
@@ -208,7 +207,7 @@ void TIM2_IT_callback(void) {
       }
 
       // Calculate step delay
-      stepDelay = 210000 / speed;
+      stepDelay = 220000 / speed;
 
       // Perform step if enough time has passed
       unsigned long currentTime = micros();
@@ -228,7 +227,7 @@ void TIM2_IT_callback(void) {
           currentStep = 0;
         }
       }
-      drv8711.clear_status();
+      //drv8711.clear_status();
     }
   }
 }
