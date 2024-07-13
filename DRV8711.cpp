@@ -30,7 +30,7 @@ void DRV8711::begin(byte drive, unsigned int microsteps, unsigned int decay_mode
   DECAY_reg = DRV8711DEC_AUTOMIX;
   set_reg(DECAY_REG, DECAY_reg);
 
-  STALL_reg = DRV8711STL_DIVIDE_32 | (0x01 << 8) | 0x40;
+  STALL_reg = DRV8711STL_DIVIDE_4 | (0x00 << 8) | 0x00;
   set_reg(STALL_REG, STALL_reg);
 
   DRIVE_reg = DRV8711DRV_HIGH_50mA | DRV8711DRV_LOW_100mA | DRV8711DRV_HIGH_250ns | DRV8711DRV_LOW_250ns | DRV8711DRV_OCP_2us | DRV8711DRV_OCP_500mV;

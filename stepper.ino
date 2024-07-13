@@ -19,6 +19,7 @@ long currentPosition = 10000;    // Current position of the stepper motor
 const long maxPosition = 12000;  // Maximum position (100,000 steps)
 const int maxSpeed = 400;        // Maximum speed in steps per second
 const int acceleration = 300;    // Acceleration in steps per second^2
+int status = 0;
 
 // Define an alternative SPI interface
 SPIClass etx_spi(PB5, PB4, PB3);  // MOSI, MISO, SCLK
@@ -86,7 +87,8 @@ void setup() {
   digitalWrite(RESET_PIN, HIGH);
   delay(10);
   digitalWrite(RESET_PIN, LOW);
-  delay(10);
+  //On exiting reset state, some time (approximately 1 mS) needs to pass before the part is fully functional.
+  delay(100);
   digitalWrite(SLEEPN, HIGH);
   delay(10);
   digitalWrite(DIR_PIN, LOW);
@@ -109,33 +111,6 @@ void setup() {
   Serial2.printf("STATUS: 0x%x\n", drv8711.get_reg(0x07));
 
   //moveToPosition(0);
-}
-
-// Configuration function for DRV8711
-// HSBB6066 N-Ch 60V Fast Switching MOSFETs
-void configureDRV8711() {
-  // TORQUE Register (0x01): Set maximum torque
-  drv8711.set_reg(0x01, 0x1FF);  // TORQUE = 255
-
-  // OFF Register (0x02): Set off time for the PWM
-  drv8711.set_reg(0x02, 0x30);  // OFF = 48 (example value) 0x30H
-
-  // BLANK Register (0x03): Set blanking time for the PWM
-  drv8711.set_reg(0x03, 0x80);  // BLANK = 128 (example value) 0x80h
-
-  // DECAY Register (0x04): Configure decay mode and decay time
-  drv8711.set_reg(0x04, 0x110);  // DECAY = 16 (example value)
-
-  // STALL Register (0x05): Configure stall detection
-  drv8711.set_reg(0x05, 0xC40);  // STALL = 64 (example value)
-
-  // DRIVE Register (0x06): Configure gate drive current and timing
-  // Gate Drive Strength: IDRIVEP (Peak Gate Drive Current, Source) and IDRIVEN (Peak Gate Drive Current, Sink)
-  // Dead Time: DTIME (Dead Time between High and Low Side FETs)
-  drv8711.set_reg(0x06, 0xA00);  // IDRIVEP = 150mA, IDRIVEN = 300mA, DTIME = 850ns
-
-  // CTRL Register (0x00): Set control register settings
-  drv8711.set_reg(0x00, 0xC10);  // ENBL = 1, RDIR = 0, RSTEP = 0, MODE = 4, EXSTALL = 0, ISGAIN = 1, DTIME = 2
 }
 
 void loop() {
@@ -170,8 +145,11 @@ void loop() {
   digitalWrite(GREEN_LED, greenLedState ? HIGH : LOW);
 
   // Print the status of the DRV8711
-  //Serial2.printf("CTRL: %d, STATUS_REG %d, CurrentPOS %d, \n", drv8711.get_reg(0x00), drv8711.get_status(), currentPosition);
-  //Serial2.printf("CTRL: %d , CurrentPOS %d, \n", drv8711.get_reg(0x00), currentPosition);
+  status = drv8711.get_status();
+  if (status != 0) {
+    Serial2.printf("CTRL: 0x%x, STATUS_REG 0x%x, CurrentPOS %d, \n", drv8711.get_reg(0x00), status, currentPosition);
+    drv8711.clear_status();  // Clear status
+  }
 }
 
 void TIM3_IT_callback(void) {
