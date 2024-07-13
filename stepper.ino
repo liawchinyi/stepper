@@ -110,7 +110,7 @@ void setup() {
   Serial2.printf("DRIVE: 0x%d\n", drv8711.get_reg(0x06));
   Serial2.printf("STATUS: 0x%x\n", drv8711.get_reg(0x07));
 
-  //moveToPosition(0);
+  moveToPosition(0);
 }
 
 void loop() {

@@ -30,35 +30,14 @@ void DRV8711::begin(byte drive, unsigned int microsteps, unsigned int decay_mode
   DECAY_reg = DRV8711DEC_AUTOMIX;
   set_reg(DECAY_REG, DECAY_reg);
 
-  STALL_reg = DRV8711STL_DIVIDE_4 | (0x00 << 8) | 0x00;
+  STALL_reg = DRV8711STL_DIVIDE_4 | (0x03 << 8) | 0x10;
   set_reg(STALL_REG, STALL_reg);
 
   DRIVE_reg = DRV8711DRV_HIGH_50mA | DRV8711DRV_LOW_100mA | DRV8711DRV_HIGH_250ns | DRV8711DRV_LOW_250ns | DRV8711DRV_OCP_2us | DRV8711DRV_OCP_500mV;
   set_reg(DRIVE_REG, DRIVE_reg);
 
-
-  // Configure initial settings
-  //write_reg_field(MODE_FIELD, microsteps);
-  //write_reg_field(DECMOD_FIELD, decay_mode);
-  //write_reg_field(IDRIVEP_FIELD, gate_speed);
-  //write_reg_field(IDRIVEN_FIELD, gate_drive);
-  //write_reg_field(DTIME_FIELD, deadtime);
-
-  // Enable the motor driver
-  //enable_motor();
 }
 
-// Set register function
-/*
-void DRV8711::set_reg(byte reg, int val) {
-  val &= 0xFFF;
-  digitalWrite(_CSpin, HIGH);
-  delayMicroseconds(1);
-  transfer((val >> 8) | ((reg & 0x07) << 4));
-  transfer(val & 0xFF);
-  digitalWrite(_CSpin, LOW);
-  delayMicroseconds(1);
-}*/
 
 // Set register function
 void DRV8711::set_reg(byte reg, unsigned int val) {
@@ -70,18 +49,6 @@ void DRV8711::set_reg(byte reg, unsigned int val) {
   digitalWrite(_CSpin, LOW);
 }
 
-// Get register function
-/*
-unsigned int DRV8711::get_reg(byte reg) {
-  digitalWrite(_CSpin, HIGH);
-  delayMicroseconds(1);
-  int res = transfer(((reg & 0x7) << 4) | 0x80);
-  res = (res << 8) | (0xFF & transfer(0));
-  digitalWrite(_CSpin, LOW);
-  delayMicroseconds(1);
-  return res & 0xFFF;
-}
-*/
 // Get register function
 
 unsigned int DRV8711::get_reg(byte reg) {
