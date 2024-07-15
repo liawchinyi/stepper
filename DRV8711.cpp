@@ -27,7 +27,7 @@ void DRV8711::begin(byte drive, unsigned int microsteps, unsigned int decay_mode
   BLANK_reg = DRV8711BLNK_ADAPTIVE_BLANK | 16; // Sets current trip blanking time, in increments of 20 ns
   set_reg(BLANK_REG, BLANK_reg);
 
-  DECAY_reg = DRV8711DEC_AUTOMIX;
+  DECAY_reg = DRV8711DEC_AUTOMIX;//In most applications, it is recommended to use auto mixed decay.
   set_reg(DECAY_REG, DECAY_reg);
 
   STALL_reg = DRV8711STL_DIVIDE_4 | (0x03 << 8) | 16;
