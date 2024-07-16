@@ -15,22 +15,23 @@ void DRV8711::begin(byte drive, unsigned int microsteps, unsigned int decay_mode
   setup_spi();
 
   drive_level = drive;
-  CTRL_reg = DRV8711CTL_DEADTIME_400ns | DRV8711CTL_IGAIN_10 | DRV8711CTL_STALL_INTERNAL | (DRV8711CTL_MODE_4 << 3) | DRV8711CTL_ENABLE;
+  CTRL_reg = DRV8711CTL_DEADTIME_850ns | DRV8711CTL_IGAIN_10 | DRV8711CTL_STALL_INTERNAL | (DRV8711CTL_MODE_4 << 3) | DRV8711CTL_ENABLE;
   set_reg(CTRL_REG, CTRL_reg);
 
   TORQUE_reg = DRV8711TRQ_BEMF_50us | DRV8711TRQ_TORQUE_MASK & 70;
   set_reg(TORQUE_REG, TORQUE_reg);
 
-  OFF_reg = 1;  //24uS [500 nS to 128 μS]
+  OFF_reg = 10;  //24uS [500 nS to 128 μS]
   set_reg(OFF_REG, OFF_reg);
 
-  BLANK_reg = DRV8711BLNK_ADAPTIVE_BLANK | 1; // Sets current trip blanking time, in increments of 20 ns
+  BLANK_reg = DRV8711BLNK_ADAPTIVE_BLANK | 10;  // Sets current trip blanking time, in increments of 20 ns
   set_reg(BLANK_REG, BLANK_reg);
 
-  DECAY_reg = DRV8711DEC_AUTOMIX;//In most applications, it is recommended to use auto mixed decay.
+  DECAY_reg = DRV8711DEC_AUTOMIX;  //In most applications, it is recommended to use auto mixed decay.
   set_reg(DECAY_REG, DECAY_reg);
 
-  STALL_reg = DRV8711STL_DIVIDE_4 | DRV8711STL_STEPS_1 | 16;
+  STALL_reg = DRV8711STL_DIVIDE_4 | DRV8711STL_STEPS_1 | 16;  //stall detect threshold
+                                                              //The correct setting needs to be determined experimentally
   set_reg(STALL_REG, STALL_reg);
 
   DRIVE_reg = DRV8711DRV_HIGH_50mA | DRV8711DRV_LOW_100mA | DRV8711DRV_HIGH_250ns | DRV8711DRV_LOW_250ns | DRV8711DRV_OCP_2us | DRV8711DRV_OCP_500mV;

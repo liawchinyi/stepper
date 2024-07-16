@@ -57,7 +57,6 @@ void moveToPosition(long position) {
   moving = true;
   Serial2.printf("moveToPosition(%d) \n", position);
 
-
 }
 
 void setup() {
