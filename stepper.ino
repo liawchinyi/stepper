@@ -18,7 +18,7 @@ uint8_t rxbytes[8];
 long currentPosition = 60000;    // Current position of the stepper motor
 const long maxPosition = 52000;  // Maximum position (100,000 steps)
 const int maxSpeed = 1000;        // Maximum speed in steps per second
-const int acceleration = 200;    // Acceleration in steps per second^2
+const int acceleration = 500;    // Acceleration in steps per second^2
 int status = 0;
 
 // Define an alternative SPI interface
@@ -142,6 +142,13 @@ void loop() {
     redLedState = !redLedState;                       // Toggle the LED state
     digitalWrite(RED_LED, redLedState ? HIGH : LOW);  // Set the LED state
   }
+  else
+  {
+    if(moving == false && currentPosition == 0)
+    moveToPosition(10000);
+    if(moving == false && currentPosition == 10000)
+    moveToPosition(0);    
+  }
 
   // Toggle the LED state
   greenLedState = !greenLedState;
@@ -188,7 +195,7 @@ void TIM2_IT_callback(void) {
       }
 
       // Calculate step delay
-      stepDelay = 220000 / speed;
+      stepDelay = 190000 / speed;
 
       // Perform step if enough time has passed
       unsigned long currentTime = micros();
@@ -206,8 +213,6 @@ void TIM2_IT_callback(void) {
         if (currentStep >= stepsToMove) {
           moving = false;
           currentStep = 0;
-
-
         }
       }
       

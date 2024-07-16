@@ -21,21 +21,20 @@ void DRV8711::begin(byte drive, unsigned int microsteps, unsigned int decay_mode
   TORQUE_reg = DRV8711TRQ_BEMF_50us | DRV8711TRQ_TORQUE_MASK & 70;
   set_reg(TORQUE_REG, TORQUE_reg);
 
-  OFF_reg = 10;  //24uS [500 nS to 128 μS]
+  OFF_reg = 1;  //24uS [500 nS to 128 μS]
   set_reg(OFF_REG, OFF_reg);
 
-  BLANK_reg = DRV8711BLNK_ADAPTIVE_BLANK | 10; // Sets current trip blanking time, in increments of 20 ns
+  BLANK_reg = DRV8711BLNK_ADAPTIVE_BLANK | 1; // Sets current trip blanking time, in increments of 20 ns
   set_reg(BLANK_REG, BLANK_reg);
 
   DECAY_reg = DRV8711DEC_AUTOMIX;//In most applications, it is recommended to use auto mixed decay.
   set_reg(DECAY_REG, DECAY_reg);
 
-  STALL_reg = DRV8711STL_DIVIDE_4 | DRV8711STL_STEPS_1 | 10;
+  STALL_reg = DRV8711STL_DIVIDE_4 | DRV8711STL_STEPS_1 | 16;
   set_reg(STALL_REG, STALL_reg);
 
   DRIVE_reg = DRV8711DRV_HIGH_50mA | DRV8711DRV_LOW_100mA | DRV8711DRV_HIGH_250ns | DRV8711DRV_LOW_250ns | DRV8711DRV_OCP_2us | DRV8711DRV_OCP_500mV;
   set_reg(DRIVE_REG, DRIVE_reg);
-
 }
 
 // Set register function
@@ -49,19 +48,15 @@ void DRV8711::set_reg(byte reg, unsigned int val) {
 }
 
 // Get register function
-
 unsigned int DRV8711::get_reg(byte reg) {
   unsigned int address = 0x8000 | (reg << 12);
-
   digitalWrite(_CSpin, HIGH);
   delayMicroseconds(1);
   unsigned int value = _spi.transfer16(address) & 0x0FFF;  //_spi.transfer16(0x0000) & 0x0FFF;
   delayMicroseconds(1);
   digitalWrite(_CSpin, LOW);
-
   return value;
 }
-
 
 // Get status function
 unsigned int DRV8711::get_status() {
