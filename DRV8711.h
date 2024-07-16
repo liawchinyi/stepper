@@ -42,6 +42,7 @@
 #define DRV8711CTL_IGAIN_20       0x200
 #define DRV8711CTL_IGAIN_40       0x300
 
+#define DRV8711CTL_MODE_2         0x001
 #define DRV8711CTL_MODE_4         0x002
 #define DRV8711CTL_MODE_8         0x003
 #define DRV8711CTL_MODE_16        0x004

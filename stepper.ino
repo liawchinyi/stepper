@@ -15,10 +15,10 @@
 #define DEBOUNCE_DELAY 50     // 50 milliseconds debounce delay
 
 uint8_t rxbytes[8];
-long currentPosition = 10000;    // Current position of the stepper motor
-const long maxPosition = 12000;  // Maximum position (100,000 steps)
-const int maxSpeed = 400;        // Maximum speed in steps per second
-const int acceleration = 300;    // Acceleration in steps per second^2
+long currentPosition = 60000;    // Current position of the stepper motor
+const long maxPosition = 52000;  // Maximum position (100,000 steps)
+const int maxSpeed = 1000;        // Maximum speed in steps per second
+const int acceleration = 200;    // Acceleration in steps per second^2
 int status = 0;
 
 // Define an alternative SPI interface
@@ -55,6 +55,9 @@ void moveToPosition(long position) {
   currentStep = 0;
   speed = 0;
   moving = true;
+  Serial2.printf("moveToPosition(%d) \n", position);
+
+
 }
 
 void setup() {
@@ -71,7 +74,7 @@ void setup() {
   MyTim3->attachInterrupt(TIM3_IT_callback);
   MyTim3->resume();  // Start Timer Interrupt
 
-  MyTim2->setOverflow(10, MICROSEC_FORMAT);  // 20 microseconds
+  MyTim2->setOverflow(10, MICROSEC_FORMAT);  // 10 microseconds
   MyTim2->attachInterrupt(TIM2_IT_callback);
   MyTim2->resume();  // Start Timer Interrupt
 
@@ -122,20 +125,20 @@ void loop() {
         newPosition = 0;
         break;
       case '2':  // Set Analogue Output 1
-        newPosition = 3000;
+        newPosition = 15000;
         break;
       case '3':
-        newPosition = 6000;
+        newPosition = 30000;
         break;
       case '4':
-        newPosition = 11000;
+        newPosition = 50000;
         break;
       default:
         // statements
         break;
     }
     moveToPosition(newPosition);
-    Serial2.printf("moveToPosition(%d) \n", newPosition);
+
     redLedState = !redLedState;                       // Toggle the LED state
     digitalWrite(RED_LED, redLedState ? HIGH : LOW);  // Set the LED state
   }
@@ -203,9 +206,11 @@ void TIM2_IT_callback(void) {
         if (currentStep >= stepsToMove) {
           moving = false;
           currentStep = 0;
+
+
         }
       }
-      //drv8711.clear_status();
+      
     }
   }
 }
