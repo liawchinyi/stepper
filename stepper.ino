@@ -15,10 +15,10 @@
 #define DEBOUNCE_DELAY 50     // 50 milliseconds debounce delay
 
 uint8_t rxbytes[8];
-long currentPosition = 60000;    // Current position of the stepper motor
-const long maxPosition = 52000;  // Maximum position (100,000 steps)
-const int maxSpeed = 1000;        // Maximum speed in steps per second
-const int acceleration = 500;    // Acceleration in steps per second^2
+const long maxPosition = 52000;      // Maximum position (100,000 steps)
+long currentPosition = maxPosition;  // Current position of the stepper motor
+const int maxSpeed = 1000;           // Maximum speed in steps per second
+const int acceleration = 500;        // Acceleration in steps per second^2
 int status = 0;
 
 // Define an alternative SPI interface
@@ -38,6 +38,9 @@ long accelDist = 0;
 long currentStep = 0;
 long speed = 0;
 long stepDelay = 0;
+long lastWaitTime = 0;
+long currentWaitTime = 0;
+long WaitDelay = 100;
 bool greenLedState = false;  // Variable to keep track of the LED state
 bool redLedState = false;    // Variable to keep track of the LED state
 
@@ -55,8 +58,11 @@ void moveToPosition(long position) {
   currentStep = 0;
   speed = 0;
   moving = true;
-  Serial2.printf("moveToPosition(%d) \n", position);
-
+  if (stepsToMove != 0) {
+    digitalWrite(SLEEPN, HIGH);
+    delay(100);  //When exiting from sleep mode, some time (approximately 1 mS) amount of time (in milliseconds) specified as parameter.
+    Serial2.printf("moveToPosition(%d) \n", position);
+  }
 }
 
 void setup() {
@@ -97,10 +103,9 @@ void setup() {
 
   // Initialize DRV8711
   drv8711.begin(DRV8711_FULL, 0x02);
-
   drv8711.enable_motor();  // Enable motor driver
   drv8711.clear_status();  // Clear status
-  delay(10);
+  delay(10);               //amount of time (in milliseconds)
 
   // Print the configured values
   Serial2.printf("CTRL: 0x%x\n", drv8711.get_reg(0x00));
@@ -141,13 +146,15 @@ void loop() {
     redLedState = !redLedState;                       // Toggle the LED state
     digitalWrite(RED_LED, redLedState ? HIGH : LOW);  // Set the LED state
   }
+  /*
   else
   {
     if(moving == false && currentPosition == 0)
-    moveToPosition(10000);
-    if(moving == false && currentPosition == 10000)
-    moveToPosition(0);    
+    moveToPosition(50000);   
+      if(moving == false && currentPosition == 50000)
+    moveToPosition(0);   
   }
+  */
 
   // Toggle the LED state
   greenLedState = !greenLedState;
@@ -176,6 +183,7 @@ void TIM2_IT_callback(void) {
     // If limit switch is activated and the direction is not away from the limit switch, stop the motor
     if (limitSwitchState == HIGH && !direction) {
       moving = false;
+
       Serial2.printf("Limit switch activated. Stopping motor.\n");
       currentPosition = 0;
     } else {
@@ -194,7 +202,7 @@ void TIM2_IT_callback(void) {
       }
 
       // Calculate step delay
-      stepDelay = 190000 / speed;
+      stepDelay = 200000 / speed;
 
       // Perform step if enough time has passed
       unsigned long currentTime = micros();
@@ -214,7 +222,12 @@ void TIM2_IT_callback(void) {
           currentStep = 0;
         }
       }
-      
+    }
+  } else {
+    currentWaitTime = micros();
+    if (currentWaitTime - lastWaitTime >= WaitDelay) {
+      lastWaitTime += WaitDelay;  // Update lastStepTime for precise timing
+      digitalWrite(SLEEPN, LOW);
     }
   }
 }

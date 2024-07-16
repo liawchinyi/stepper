@@ -30,12 +30,14 @@ void DRV8711::begin(byte drive, unsigned int microsteps, unsigned int decay_mode
   DECAY_reg = DRV8711DEC_AUTOMIX;  //In most applications, it is recommended to use auto mixed decay.
   set_reg(DECAY_REG, DECAY_reg);
 
-  STALL_reg = DRV8711STL_DIVIDE_4 | DRV8711STL_STEPS_1 | 16;  //stall detect threshold
+  STALL_reg = DRV8711STL_DIVIDE_4 | DRV8711STL_STEPS_1 | 32;  //stall detect threshold
                                                               //The correct setting needs to be determined experimentally
   set_reg(STALL_REG, STALL_reg);
 
   DRIVE_reg = DRV8711DRV_HIGH_50mA | DRV8711DRV_LOW_100mA | DRV8711DRV_HIGH_250ns | DRV8711DRV_LOW_250ns | DRV8711DRV_OCP_2us | DRV8711DRV_OCP_500mV;
   set_reg(DRIVE_REG, DRIVE_reg);
+
+  //HSBB6066 N-Ch 60V Fast Switching MOSFETs Total Gate Charge (4.5V) 33nC
 }
 
 // Set register function
@@ -53,7 +55,7 @@ unsigned int DRV8711::get_reg(byte reg) {
   unsigned int address = 0x8000 | (reg << 12);
   digitalWrite(_CSpin, HIGH);
   delayMicroseconds(1);
-  unsigned int value = _spi.transfer16(address) & 0x0FFF;  //_spi.transfer16(0x0000) & 0x0FFF;
+  unsigned int value = _spi.transfer16(address) & 0x0FFF; 
   delayMicroseconds(1);
   digitalWrite(_CSpin, LOW);
   return value;
