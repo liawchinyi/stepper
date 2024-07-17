@@ -15,7 +15,9 @@
 #define DEBOUNCE_DELAY 50     // 50 milliseconds debounce delay
 
 uint8_t rxbytes[8];
-const long maxPosition = 52000;      // Maximum position (100,000 steps)
+uint8_t Position_PTR = 0;
+long NextPosition[4];
+const long maxPosition = 50000;      // Maximum position (100,000 steps)
 long currentPosition = maxPosition;  // Current position of the stepper motor
 const int maxSpeed = 1000;           // Maximum speed in steps per second
 const int acceleration = 500;        // Acceleration in steps per second^2
@@ -40,7 +42,7 @@ long speed = 0;
 long stepDelay = 0;
 long lastWaitTime = 0;
 long currentWaitTime = 0;
-long WaitDelay = 100;
+long WaitDelay = 5000;       //mS
 bool greenLedState = false;  // Variable to keep track of the LED state
 bool redLedState = false;    // Variable to keep track of the LED state
 
@@ -58,11 +60,11 @@ void moveToPosition(long position) {
   currentStep = 0;
   speed = 0;
   moving = true;
-  if (stepsToMove != 0) {
+  if (!digitalRead(SLEEPN)) {
     digitalWrite(SLEEPN, HIGH);
-    delay(100);  //When exiting from sleep mode, some time (approximately 1 mS) amount of time (in milliseconds) specified as parameter.
-    Serial2.printf("moveToPosition(%d) \n", position);
+    delay(1);  //When exiting from sleep mode, some time (approximately 1 mS) amount of time (in milliseconds) specified as parameter.
   }
+  //Serial2.printf("moveToPosition(%d) \n", position);
 }
 
 void setup() {
@@ -117,6 +119,11 @@ void setup() {
   Serial2.printf("DRIVE: 0x%d\n", drv8711.get_reg(0x06));
   Serial2.printf("STATUS: 0x%x\n", drv8711.get_reg(0x07));
 
+  NextPosition[0] = 0;
+  NextPosition[1] = 0;
+  NextPosition[2] = 0;
+  NextPosition[3] = 0;
+
   moveToPosition(0);
 }
 
@@ -129,10 +136,10 @@ void loop() {
         newPosition = 0;
         break;
       case '2':  // Set Analogue Output 1
-        newPosition = 15000;
+        newPosition = 25000;
         break;
       case '3':
-        newPosition = 30000;
+        newPosition = 40000;
         break;
       case '4':
         newPosition = 50000;
@@ -141,20 +148,36 @@ void loop() {
         // statements
         break;
     }
-    moveToPosition(newPosition);
+    //moveToPosition(newPosition);
+    if (!moving) {
+      moveToPosition(newPosition);
+      redLedState = !redLedState;                       // Toggle the LED state
+      digitalWrite(RED_LED, redLedState ? HIGH : LOW);  // Set the LED state
+    } else {
+      Position_PTR++;  // incr to 1
 
-    redLedState = !redLedState;                       // Toggle the LED state
-    digitalWrite(RED_LED, redLedState ? HIGH : LOW);  // Set the LED state
+      if (Position_PTR > 3)
+        Position_PTR = 3;
+
+      NextPosition[Position_PTR] = newPosition;
+    }
+  } else {
+    if (!moving) {
+      if (Position_PTR > 0) {  //Position_PTR = 0 not used
+        moveToPosition(NextPosition[Position_PTR]);
+        Position_PTR = 0;  // no more
+      }
+    }
   }
+
   /*
   else
   {
     if(moving == false && currentPosition == 0)
-    moveToPosition(50000);   
-      if(moving == false && currentPosition == 50000)
+    moveToPosition(20000);   
+      if(moving == false && currentPosition == 20000)
     moveToPosition(0);   
-  }
-  */
+  }*/
 
   // Toggle the LED state
   greenLedState = !greenLedState;
@@ -170,7 +193,7 @@ void loop() {
 
 void TIM3_IT_callback(void) {
   uint8_t mappedPosition = map(currentPosition, 0, maxPosition, 0, 255);
-  //Serial2.println(currentPosition);
+  Serial2.println(mappedPosition);
 }
 
 void TIM2_IT_callback(void) {
@@ -183,8 +206,7 @@ void TIM2_IT_callback(void) {
     // If limit switch is activated and the direction is not away from the limit switch, stop the motor
     if (limitSwitchState == HIGH && !direction) {
       moving = false;
-
-      Serial2.printf("Limit switch activated. Stopping motor.\n");
+      Serial2.printf("Limit switch activated. Stopping motor. \n");
       currentPosition = 0;
     } else {
       // Calculate speed based on acceleration profile
@@ -206,6 +228,7 @@ void TIM2_IT_callback(void) {
 
       // Perform step if enough time has passed
       unsigned long currentTime = micros();
+
       if (currentTime - lastStepTime >= stepDelay) {
         lastStepTime += stepDelay;  // Update lastStepTime for precise timing
         digitalWrite(STEP_PIN, HIGH);
@@ -224,10 +247,7 @@ void TIM2_IT_callback(void) {
       }
     }
   } else {
-    currentWaitTime = micros();
-    if (currentWaitTime - lastWaitTime >= WaitDelay) {
-      lastWaitTime += WaitDelay;  // Update lastStepTime for precise timing
-      digitalWrite(SLEEPN, LOW);
-    }
+    //if (Position_PTR == 0)
+    //digitalWrite(SLEEPN, LOW);
   }
 }

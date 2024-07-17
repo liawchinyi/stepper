@@ -18,7 +18,7 @@ void DRV8711::begin(byte drive, unsigned int microsteps, unsigned int decay_mode
   CTRL_reg = DRV8711CTL_DEADTIME_850ns | DRV8711CTL_IGAIN_10 | DRV8711CTL_STALL_INTERNAL | (DRV8711CTL_MODE_4 << 3) | DRV8711CTL_ENABLE;
   set_reg(CTRL_REG, CTRL_reg);
 
-  TORQUE_reg = DRV8711TRQ_BEMF_50us | DRV8711TRQ_TORQUE_MASK & 70;
+  TORQUE_reg = DRV8711TRQ_BEMF_50us | DRV8711TRQ_TORQUE_MASK & 90;
   set_reg(TORQUE_REG, TORQUE_reg);
 
   OFF_reg = 10;  //24uS [500 nS to 128 μS]
@@ -30,7 +30,7 @@ void DRV8711::begin(byte drive, unsigned int microsteps, unsigned int decay_mode
   DECAY_reg = DRV8711DEC_AUTOMIX;  //In most applications, it is recommended to use auto mixed decay.
   set_reg(DECAY_REG, DECAY_reg);
 
-  STALL_reg = DRV8711STL_DIVIDE_4 | DRV8711STL_STEPS_1 | 32;  //stall detect threshold
+  STALL_reg = DRV8711STL_DIVIDE_4 | DRV8711STL_STEPS_2 | 16;  //stall detect threshold
                                                               //The correct setting needs to be determined experimentally
   set_reg(STALL_REG, STALL_reg);
 
