@@ -16,7 +16,8 @@
 
 uint8_t rxbytes[8];
 uint8_t Position_PTR = 0;
-long NextPosition[4];
+const int bufferSize = 4;
+long NextPosition[bufferSize];
 const long maxPosition = 50000;      // Maximum position (100,000 steps)
 long currentPosition = maxPosition;  // Current position of the stepper motor
 const int maxSpeed = 1000;           // Maximum speed in steps per second
@@ -128,9 +129,10 @@ void setup() {
 }
 
 void loop() {
-  if (Serial2.available()) {
-    rxbytes[0] = Serial2.read();
+  if (Serial3.available()) {
+    rxbytes[0] = Serial3.read();
     // Command Decoder
+    /*
     switch (rxbytes[0]) {
       case '1':
         newPosition = 0;
@@ -147,26 +149,25 @@ void loop() {
       default:
         // statements
         break;
-    }
-    //moveToPosition(newPosition);
+    }*/
+    newPosition = map(rxbytes[0], 0, 255, 0, maxPosition);
     if (!moving) {
       moveToPosition(newPosition);
       redLedState = !redLedState;                       // Toggle the LED state
       digitalWrite(RED_LED, redLedState ? HIGH : LOW);  // Set the LED state
     } else {
-      Position_PTR++;  // incr to 1
-
-      if (Position_PTR > 3)
-        Position_PTR = 3;
-
-      NextPosition[Position_PTR] = newPosition;
+      if (Position_PTR < bufferSize - 1) {
+        Position_PTR++;
+        NextPosition[Position_PTR] = newPosition;
+      }
     }
   } else {
-    if (!moving) {
-      if (Position_PTR > 0) {  //Position_PTR = 0 not used
-        moveToPosition(NextPosition[Position_PTR]);
-        Position_PTR = 0;  // no more
+    if (!moving && Position_PTR > 0) {
+      for (int i = 1; i <= Position_PTR; i++) {
+        NextPosition[i - 1] = NextPosition[i];
       }
+      Position_PTR--;
+      moveToPosition(NextPosition[0]);
     }
   }
 
@@ -194,6 +195,7 @@ void loop() {
 void TIM3_IT_callback(void) {
   uint8_t mappedPosition = map(currentPosition, 0, maxPosition, 0, 255);
   Serial2.println(mappedPosition);
+  Serial3.println(mappedPosition);
 }
 
 void TIM2_IT_callback(void) {
